@@ -7,7 +7,9 @@ ui <- fluidPage(
   uiOutput("game_button", inline = TRUE),
   br(),
   uiOutput("n_ais"),  
+  hr(),
   uiOutput("cards"),
+  hr(),
   uiOutput("move_1"),
   uiOutput("move_2"),
   uiOutput("history")

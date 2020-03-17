@@ -6,7 +6,7 @@ library(readr)
 source("functions.R")
 source("ai.R")
 
-big_text <- h3
+big_text <- h4
 
 state <- reactiveValues(
   game_status = "inactive",
@@ -31,28 +31,55 @@ server <- function(input, output) {
     state$history <- matrix(NA, nrow = 0, ncol = 4)
   }
   
+  give_human_a_card <- function(exists = F) {
+    existence_text <- ifelse(exists, "Hand exists -", "Hand does not exist -")
+    shinyalert(
+      title = paste(existence_text, "you get a card"), 
+      text = display_all_cards(state$player_names, state$cards, state$history),
+      html = T
+    ) 
+    state$n_cards[1] <- state$n_cards[1] + 1
+    state$current_player <- 1
+  }
+  
   give_ai_a_card <- function(player, exists = F) {
     player_name <- state$player_names[player]
     existence_text <- ifelse(exists, "Hand exists -", "Hand does not exist -")
-    shinyalert(title = paste(existence_text, player_name, "gets a card"), text = display_all_cards(state$player_names, state$cards)) 
+    shinyalert(
+      title = paste(existence_text, player_name, "gets a card"), 
+      text = display_all_cards(state$player_names, state$cards, state$history),
+      html = T
+    ) 
     state$n_cards[player] <- state$n_cards[player] + 1
   }
   
   erase_player <- function(player) {
     player_name <- state$player_names[player]
-    shinyalert(title = paste("Hand exists -", player_name, "drops"), text = display_all_cards(state$player_names, state$cards)) 
+    shinyalert(
+      title = paste("Hand exists -", player_name, "drops"),
+      text = display_all_cards(state$player_names, state$cards, state$history),
+      html = T
+    ) 
     state$n_players <- state$n_players - 1
     state$player_names <- state$player_names[-player]
     state$n_cards <- state$n_cards[-player]
   }
   
   kick_out_human <- function() {
-    shinyalert(title = "Hand exists - you lost the game...", text = display_all_cards(state$player_names, state$cards))
+    shinyalert(
+      title = "Hand exists - you lost the game...", 
+      text = display_all_cards(state$player_names, state$cards, state$history),
+      html = T
+    )
     state$game_status <- "inactive"
   }
   
   make_human_win <- function() {
-    shinyalert(title = "Hand exists - you won the game!", text = display_all_cards(state$player_names, state$cards))
+    shinyalert(
+      title = "Hand exists - you won the game!", 
+      text = display_all_cards(state$player_names, state$cards, state$history),
+      html = T
+    )
     state$game_status <- "inactive"
   }
   
@@ -61,7 +88,13 @@ server <- function(input, output) {
   observeEvent(input$help, {
     shinyalert(
       title = "Instructions",
-      text = "The game of Blef",
+      text = "You are playing Blef - a Polish card game inspired by poker. At the beginning of each round, each player gets a certain number of cards.
+      \n\nThe player who begins makes a bet (for example: \"pair of aces\"). By doing that, he / she states that if we pool all players' cards, we will find a given combination of cards (here: at least two aces). The next player can either make a bigger bet (state a more senior combination of cards) or check. 
+      \n\nWhen player Y checks player X, everybody reveals their cards. If X's bet was right (X's stated combination exists across everybody's pooled cards), Y loses the round. If X's bet isn't right, X loses the round.
+      \n\nThe player who loses gets one more card in the next round. When a player reaches a certain number of cards, they lose the game completely.
+      \n\n\"Small\" means 9 thru K 
+      \"Big\" means 10 thru A
+      \"Great\" means 9 thru A",
       type = "info"
     )
   })
@@ -103,7 +136,7 @@ server <- function(input, output) {
   # Active game UI
   observeEvent(state$cards, {
     output$display_own_cards <- renderUI({
-      display_own_cards(matrix(state$cards[state$cards[, 1] == 1, ], ncol = 3))
+      HTML(display_own_cards(matrix(state$cards[state$cards[, 1] == 1, ], ncol = 3)))
     })
   })
   
@@ -224,11 +257,7 @@ server <- function(input, output) {
     # If hand exists, make current player lose
     if (hand_exists) {
       if (state$n_cards[cp] > state$max_cards) kick_out_human() 
-      if (state$n_cards[cp] <= state$max_cards) {
-        shinyalert(title = "Hand exists - you get a card", text = display_all_cards(state$player_names, state$cards)) 
-        state$n_cards[cp] <- state$n_cards[cp] + 1
-      }
-      state$current_player <- 1
+      if (state$n_cards[cp] <= state$max_cards) give_human_a_card(exists = T)
     } 
     # If hand does not exist, make previous player lose
     if (!hand_exists) {
@@ -254,7 +283,10 @@ server <- function(input, output) {
     }
     
     if(!legal) {
-      shinyalert(title = "Not possible", text = "This bet is not higher than the last one.")
+      shinyalert(
+        title = "Not possible", 
+        text = "This bet is not higher than the last one. \n\nRemember that if you bet two pairs, the first one needs to be higher than the second one."
+      )
     } else {
       if (!is.null(ui_elements$hand_detail_2)) {
         action <- c(1, input$hand_type, input$hand_detail_1, input$hand_detail_2)
@@ -282,16 +314,9 @@ server <- function(input, output) {
           # If hand exists, make current player lose
           if (hand_exists) {
             knock_out <- state$n_cards[cp] == state$max_cards
-            
             if (knock_out & state$n_players == 2 & cp != 1) make_human_win()
-            if (knock_out & state$n_players > 2 & cp != 1) {
-              erase_player(cp)
-            }
-            if(!knock_out) {
-              give_ai_a_card(cp, exists = T) 
-            } 
-            state$current_player <- cp - 1 
-            deal_cards_and_reset_history()
+            if (knock_out & state$n_players > 2 & cp != 1) erase_player(cp)
+            if (!knock_out) give_ai_a_card(cp, exists = T) 
           } 
           # If hand does not exist, make previous player lose
           if(!hand_exists) {
@@ -299,14 +324,14 @@ server <- function(input, output) {
             if (knock_out & lp == 1) kick_out_human()
             if (knock_out & lp != 1 & state$n_players == 2) make_human_win()
             if (knock_out & lp != 1 & state$n_players >= 2) erase_player(cp)
-            if (!knock_out) give_ai_a_card(lp, exists = F)
-            state$current_player <- lp 
+            if (!knock_out & lp != 1) give_ai_a_card(lp, exists = F)
+            if (!knock_out & lp == 1) give_human_a_card()
           } 
+          state$current_player <- lp 
           deal_cards_and_reset_history()
         } else {
           proceed_normally(action)
         }
-        Sys.sleep(1)
       }
     }
   })

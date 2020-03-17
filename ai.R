@@ -1,4 +1,6 @@
 index_hand <- function(type, detail_1, detail_2) {
+  detail_1 %<>% as.numeric()
+  detail_2 %<>% as.numeric()
   if(type == "High card") return(detail_1)
   if(type == "Pair") return(6 + detail_1)
   if(type == "Two pairs") return(12 + (detail_1 - 2) * (detail_1 - 1) / 2 + detail_2)
@@ -86,6 +88,21 @@ compute_hands_chances <- function(combinations) {
   return(out)
 }
 
+# random_chance_list <- lapply(19:23, function(i) {
+#   m <- permutations(
+#     x = c(0, 1),
+#     freq = c(24 - i, i),
+#     k = 24
+#   )
+#   m <- matrix(c(m, rep(1 / nrow(m), nrow(m))), nrow = nrow(m), ncol = 25)
+#   compute_hands_chances(m)
+# }) %>%
+#   unlist() %>%
+#   matrix(ncol = 88, byrow = T) %>%
+#   as.data.frame()
+
+random_chance_table <- read_csv("random_chances.csv")
+
 index_card <- function(card) (card[2] - 1) * 4 + card[3]
 
 get_action <- function(n_cards, p_cards, history, p) {
@@ -102,32 +119,46 @@ get_action <- function(n_cards, p_cards, history, p) {
   n_own_cards <- n_cards[p]
   n_rival_cards <- n_cards[-p]
 
-  m <- permutations(
-    x = c(0, (1:length(n_cards))[-p]),
-    freq = c(24 - sum(n_cards), n_cards[-p]),
-    k = 24 - n_own_cards
-  )
-  nc <- nrow(m)
-  combinations <- matrix(c(rep(0, nc * 24), rep(0, nc)), nrow = nc, ncol = 25)
+  # Compute chances of each card distribution occurring
+  if(sum(n_cards) == 24) {
+    hand_chances <- rep(1, 88)
+  } else {
+    m <- permutations(
+      x = c(0, (1:length(n_cards))[-p]),
+      freq = c(24 - sum(n_cards), n_cards[-p]),
+      k = 24 - n_own_cards
+    )
+    nc <- nrow(m)
+    combinations <- matrix(c(rep(0, nc * 24), rep(0, nc)), nrow = nc, ncol = 25)
+    combinations[, foreign_cards] <- m
+    combinations[, own_cards] <- p
+    combinations[, 25] <- rep(1 / nc, nc)
+    hand_chances <- compute_hands_chances(combinations)
+  }
   
-  combinations[, foreign_cards] <- m
-  combinations[, own_cards] <- p
-  combinations[, 25] <- rep(1 / nc, nc)
-
+  # Compute chances of each card distribution occurring at random
+  if (sum(n_cards) == 24) random_chances <- rep(1, 88)
+  if (sum(n_cards) != 24) random_chances <- random_chance_table[sum(n_cards), ]
+  
+  # Compute which moves are illegal
   if(nrow(history) > 0) {
     last_move <- history[nrow(history), ]
     last_move_index <- index_hand(last_move[2], as.numeric(last_move[3]), as.numeric(last_move[4])) %>%
       as.numeric()
+    illegal_moves <- 1:last_move_index
   } else {
-    last_move_index <- 0
+    illegal_moves <- NULL
   }
-  hand_chances <- compute_hands_chances(combinations)
-  hand_chances[1:last_move_index] <- -1
   
-  if(max(hand_chances) < 0.4) {
+  veracity <- 0.8
+  balanced_chances <- (1 - veracity) * random_chances + veracity * hand_chances
+  balanced_chances[illegal_moves] <- -1
+
+  if(max(balanced_chances) < 0.4) {
     return(c(p, "check", NA, NA))
   } else {
-    hand_picked <- tail(which(hand_chances == max(hand_chances)), 1)
+    hand_picked <- which(balanced_chances == max(balanced_chances))
+    if (length(hand_picked) > 1) hand_picked %<>% sample(1)
     hand_type <- as.character(indexation$hand_type[hand_picked])
     detail_1 <- indexation$detail_1[hand_picked]
     detail_2 <- indexation$detail_2[hand_picked]

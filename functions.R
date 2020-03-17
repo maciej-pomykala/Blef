@@ -4,7 +4,7 @@ all_hand_types <- c(
 )
 value_names <- c("9", "10", "J", "Q", "K", "A")
 colour_names <- c("hearts", "diamonds", "spades", "clubs")
-ai_names <- c("Electric Turk One", "Electric Turk Two", "Electric Turk Three", "Electric Turk Four", "Electric Turk Five")
+ai_names <- c("Ay Eye One", "Ay Eye Two", "Ay Eye Three", "Ay Eye Four", "Ay Eye Five")
 
 encode_type <- function(type) {
   code <- ifelse(type == "check", 0, which(all_hand_types) == type)
@@ -47,14 +47,15 @@ display_own_cards <- function(cards) {
     apply(cards, 1, function(card) {
       value <- setNames(c("9", "10", "J", "Q", "K", "A"), 1:6)[card[2]]
       colour <- setNames(colour_names, 1:4)[card[3]]
-      return(paste0("* ", value, " ", colour, "<br>"))
+      return(paste0("<li><b>", value, " ", colour, "</b><br>"))
     })
   ) %>%
     paste() %>%
     HTML()
 }
 
-display_all_cards <- function(player_names, cards) {
+display_all_cards <- function(player_names, cards, history) {
+  last_item <- history[nrow(history), ]
   owners <- cards[, 1]
   
   display_p_card <- function(card) {
@@ -64,14 +65,14 @@ display_all_cards <- function(player_names, cards) {
   }
   
   display_all_p_cards <- function(p) {
-    c(paste0(player_names[p], ":"), apply(matrix(cards[owners == p, ], ncol = 3), 1, display_p_card)) %>%
+    c(paste0("<br><b>", player_names[p], "</b>:"), apply(matrix(cards[owners == p, ], ncol = 3), 1, display_p_card)) %>%
       c() %>%
-      paste(collapse = "\n")
+      paste(collapse = "<br>")
   }
   
-  c("The cards are the following:", lapply(1:length(player_names), display_all_p_cards)) %>%
+  c(display_history_item(player_names, last_item), "The cards are the following:", lapply(1:length(player_names), display_all_p_cards)) %>%
     c() %>%
-    paste(collapse = "\n\n") %>%
+    paste(collapse = "<br>") %>%
     HTML()
 }
 
@@ -79,11 +80,11 @@ display_n_cards <- function(player_names, n_cards) {
   HTML(
     paste(
       c(
-        "Players have the following number of cards:<br/>",
+        "<br/>Players have the following number of cards:<br/>",
         lapply(1:length(player_names), function(p) {
           player_name <- player_names[p]
           player_n_cards <- n_cards[p]
-          return(paste0("* ", player_name, ": ", player_n_cards, "<br/>"))
+          return(paste0("<li>", player_name, ": ", player_n_cards, "<br/>"))
         })
       )
     )
