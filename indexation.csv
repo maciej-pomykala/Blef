@@ -1,0 +1,89 @@
+hand_type,detail_1,detail_2
+High card,1,
+High card,2,
+High card,3,
+High card,4,
+High card,5,
+High card,6,
+Pair,1,
+Pair,2,
+Pair,3,
+Pair,4,
+Pair,5,
+Pair,6,
+Two pairs,2,1
+Two pairs,3,1
+Two pairs,3,2
+Two pairs,4,1
+Two pairs,4,2
+Two pairs,4,3
+Two pairs,5,1
+Two pairs,5,2
+Two pairs,5,3
+Two pairs,5,4
+Two pairs,6,1
+Two pairs,6,2
+Two pairs,6,3
+Two pairs,6,4
+Two pairs,6,5
+Three of a kind,1,
+Three of a kind,2,
+Three of a kind,3,
+Three of a kind,4,
+Three of a kind,5,
+Three of a kind,6,
+Small straight,,
+Big straight,,
+Great straight,,
+Colour,4,
+Colour,3,
+Colour,2,
+Colour,1,
+Full house,1,2
+Full house,1,3
+Full house,1,4
+Full house,1,5
+Full house,1,6
+Full house,2,1
+Full house,2,3
+Full house,2,4
+Full house,2,5
+Full house,2,6
+Full house,3,1
+Full house,3,2
+Full house,3,4
+Full house,3,5
+Full house,3,6
+Full house,4,1
+Full house,4,2
+Full house,4,3
+Full house,4,5
+Full house,4,6
+Full house,5,1
+Full house,5,2
+Full house,5,3
+Full house,5,4
+Full house,5,6
+Full house,6,1
+Full house,6,2
+Full house,6,3
+Full house,6,4
+Full house,6,5
+Four of a kind,1,
+Four of a kind,2,
+Four of a kind,3,
+Four of a kind,4,
+Four of a kind,5,
+Four of a kind,6,
+Small poker,4,
+Small poker,3,
+Small poker,2,
+Small poker,1,
+Big poker,4,
+Big poker,3,
+Big poker,2,
+Big poker,1,
+Great poker,4,
+Great poker,3,
+Great poker,2,
+Great poker,1,
