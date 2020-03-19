@@ -4,12 +4,12 @@ index_hand <- function(type, detail_1, detail_2) {
   if(type == "High card") return(detail_1)
   if(type == "Pair") return(6 + detail_1)
   if(type == "Two pairs") return(12 + (detail_1 - 2) * (detail_1 - 1) / 2 + detail_2)
-  if(type == "Three of a kind") return(27 + detail_1)
-  if(type == "Small straight") return(34)
-  if(type == "Big straight") return(35)
-  if(type == "Great straight") return(36)
-  if(type == "Colour") return(36 + detail_1)
-  if(type == "Full house") return(40 + (detail_1 - 1) * 5 + detail_2 - sum(detail_2 > detail_1))
+  if(type == "Small straight") return(28)
+  if(type == "Big straight") return(29)
+  if(type == "Great straight") return(30)
+  if(type == "Three of a kind") return(30 + detail_1)
+  if(type == "Full house") return(36 + (detail_1 - 1) * 5 + detail_2 - sum(detail_2 > detail_1))
+  if(type == "Colour") return(66 + detail_1)
   if(type == "Four of a kind") return(70 + detail_1)
   if(type == "Small flush") return(76 + 5 - detail_1)
   if(type == "Big flush") return(80 + 5 - detail_1)
@@ -17,6 +17,13 @@ index_hand <- function(type, detail_1, detail_2) {
 }
 
 indexation <- read.csv("indexation.csv")
+
+get_bet_by_number <- function(p, bet_number) {
+  hand_type <- as.character(indexation$hand_type[bet_number])
+  detail_1 <- indexation$detail_1[bet_number]
+  detail_2 <- indexation$detail_2[bet_number]
+  return(c(p, hand_type, detail_1, detail_2))
+}
 
 compute_hands_chances <- function(combinations) {
   out <- vector("numeric", 88)
@@ -29,7 +36,7 @@ compute_hands_chances <- function(combinations) {
       summarise(chance = sum(chance))
     out[value] <- sum(distribution$chance[distribution$stack >= 1])
     out[6 + value] <- sum(distribution$chance[distribution$stack >= 2])
-    out[27 + value] <- sum(distribution$chance[distribution$stack >= 3])
+    out[30 + value] <- sum(distribution$chance[distribution$stack >= 3])
     out[70 + value] <- sum(distribution$chance[distribution$stack >= 4])
   }
   
@@ -52,20 +59,12 @@ compute_hands_chances <- function(combinations) {
     relevant_columns <- ((value - 1) * 4 + 1):((value - 1) * 4 + 4)
     v[[value]] <- rowSums(combinations[, relevant_columns] > 0) >= 1
   }
-  out[34] <- sum(combinations[v[[1]] & v[[2]] & v[[3]] & v[[4]] & v[[5]], 25])
-  out[35] <- sum(combinations[v[[2]] & v[[3]] & v[[4]] & v[[5]] & v[[6]], 25])
-  out[36] <- sum(combinations[v[[1]] & v[[2]] & v[[3]] & v[[4]] & v[[5]] & v[[6]], 25])
-  
-  # COLOUR
-  colour_reached <- list()
-  for(colour in 1:4) {
-    relevant_columns <- (0:5) * 4 + colour 
-    colour_reached[[colour]] <- rowSums(combinations[, relevant_columns] > 0) >= 5
-    out[36 + colour] <- sum(combinations[colour_reached[[colour]], 25])
-  }
+  out[28] <- sum(combinations[v[[1]] & v[[2]] & v[[3]] & v[[4]] & v[[5]], 25])
+  out[29] <- sum(combinations[v[[2]] & v[[3]] & v[[4]] & v[[5]] & v[[6]], 25])
+  out[30] <- sum(combinations[v[[1]] & v[[2]] & v[[3]] & v[[4]] & v[[5]] & v[[6]], 25])
   
   # FULL HOUSE
-  position <- 41
+  position <- 37
   for(big in 1:6) {
     for(small in (1:6)[-big]) {
       relevant_columns_small <- ((small - 1) * 4 + 1):((small - 1) * 4 + 4)
@@ -75,6 +74,14 @@ compute_hands_chances <- function(combinations) {
       out[position] <- sum(combinations[small_reached & big_reached, 25])
       position <- position + 1
     }
+  }
+  
+  # COLOUR
+  colour_reached <- list()
+  for(colour in 1:4) {
+    relevant_columns <- (0:5) * 4 + colour 
+    colour_reached[[colour]] <- rowSums(combinations[, relevant_columns] > 0) >= 5
+    out[66 + colour] <- sum(combinations[colour_reached[[colour]], 25])
   }
   
   position <- 77
@@ -88,7 +95,7 @@ compute_hands_chances <- function(combinations) {
   return(out)
 }
 
-# random_chance_list <- lapply(19:23, function(i) {
+# random_chance_list <- lapply(15:23, function(i) { # Necessary to do it in chunks so the code doesn't explode the machine
 #   m <- permutations(
 #     x = c(0, 1),
 #     freq = c(24 - i, i),
@@ -100,6 +107,7 @@ compute_hands_chances <- function(combinations) {
 #   unlist() %>%
 #   matrix(ncol = 88, byrow = T) %>%
 #   as.data.frame()
+# write_csv(rbind(read_csv("indexation.csv"), random_chance_list), "indexation.csv")
 
 random_chance_table <- read_csv("random_chances.csv")
 
@@ -124,8 +132,8 @@ get_action <- function(n_cards, p_cards, history, p) {
     hand_chances <- rep(1, 88)
   } else {
     m <- permutations(
-      x = c(0, (1:length(n_cards))[-p]),
-      freq = c(24 - sum(n_cards), n_cards[-p]),
+      x = c(0, length(n_cards) + 1),
+      freq = c(24 - sum(n_cards), sum(n_cards[-p])),
       k = 24 - n_own_cards
     )
     nc <- nrow(m)
@@ -150,19 +158,34 @@ get_action <- function(n_cards, p_cards, history, p) {
     illegal_moves <- NULL
   }
   
-  veracity <- 0.8
+  veracity <- 0.7
   balanced_chances <- (1 - veracity) * random_chances + veracity * hand_chances
-  balanced_chances[illegal_moves] <- -1
+  balanced_chances[illegal_moves] <- -10
 
-  if(max(balanced_chances) < 0.4) {
+  bc <- balanced_chances
+  
+  if(max(bc) < 0.4) {
     return(c(p, "check", NA, NA))
   } else {
-    hand_picked <- which(balanced_chances == max(balanced_chances))
-    if (length(hand_picked) > 1) hand_picked %<>% sample(1)
-    hand_type <- as.character(indexation$hand_type[hand_picked])
-    detail_1 <- indexation$detail_1[hand_picked]
-    detail_2 <- indexation$detail_2[hand_picked]
-    return(c(p, hand_type, detail_1, detail_2))
+    # try if we can go to a bigger bet worth >40% that prevents opponents from doing anything worth >15%
+    block <- F
+    first <- tail(which(bc == max(bc)), 1)
+    if (first != 88) {
+      second <- tail(which(bc == max(bc[(first + 1): 88])), 1)
+      if (second != 88) {
+        third <- tail(which(bc == max(bc[(second + 1): 88])), 1)
+        block <- bc[second] >= (bc[first] - 0.1) & bc[second] > 0.5 & bc[third] <= 0.25
+      }
+    }
+    
+    if(block) {
+      hand_picked <- second
+    } else {
+      hand_picked <- which(bc == max(bc))
+      if (length(hand_picked) > 1) hand_picked %<>% sample(1)
+    }
+    
+    return(get_bet_by_number(p, hand_picked))
   }
 }
 

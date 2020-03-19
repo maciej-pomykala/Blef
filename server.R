@@ -65,7 +65,8 @@ server <- function(input, output) {
     state$n_cards <- state$n_cards[-player]
   }
   
-  kick_out_human <- function() {
+  kick_out_human <- function(exists = F) {
+    existence_text <- ifelse(exists, "Hand exists -", "Hand does not exist -")
     shinyalert(
       title = "Hand exists - you lost the game...", 
       text = display_all_cards(state$player_names, state$cards, state$history),
@@ -169,7 +170,7 @@ server <- function(input, output) {
       choices = all_hand_types,
       selected = ui_elements$last_hand_type,
       inline =  TRUE, 
-      width = 800
+      width = 720
     )
   })
   
@@ -256,7 +257,7 @@ server <- function(input, output) {
     
     # If hand exists, make current player lose
     if (hand_exists) {
-      if (state$n_cards[cp] > state$max_cards) kick_out_human() 
+      if (state$n_cards[cp] > state$max_cards) kick_out_human(exists = T) 
       if (state$n_cards[cp] <= state$max_cards) give_human_a_card(exists = T)
     } 
     # If hand does not exist, make previous player lose
@@ -311,23 +312,23 @@ server <- function(input, output) {
         if(action[2] == "check") {
           statement <- state$history[nrow(state$history), ]
           hand_exists <- determine_hand_existence(state$cards, statement)
-          # If hand exists, make current player lose
+          # If hand exists, make current player lose (do not change current player)
           if (hand_exists) {
             knock_out <- state$n_cards[cp] == state$max_cards
             if (knock_out & state$n_players == 2 & cp != 1) make_human_win()
             if (knock_out & state$n_players > 2 & cp != 1) erase_player(cp)
             if (!knock_out) give_ai_a_card(cp, exists = T) 
           } 
-          # If hand does not exist, make previous player lose
+          # If hand does not exist, make previous player lose (and switch to previous player)
           if(!hand_exists) {
             knock_out <- state$n_cards[lp] == state$max_cards
             if (knock_out & lp == 1) kick_out_human()
             if (knock_out & lp != 1 & state$n_players == 2) make_human_win()
-            if (knock_out & lp != 1 & state$n_players >= 2) erase_player(cp)
+            if (knock_out & lp != 1 & state$n_players > 2) erase_player(lp)
             if (!knock_out & lp != 1) give_ai_a_card(lp, exists = F)
             if (!knock_out & lp == 1) give_human_a_card()
+            state$current_player <- lp 
           } 
-          state$current_player <- lp 
           deal_cards_and_reset_history()
         } else {
           proceed_normally(action)

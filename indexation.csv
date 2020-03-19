@@ -26,19 +26,15 @@ Two pairs,6,2
 Two pairs,6,3
 Two pairs,6,4
 Two pairs,6,5
+Small straight,,
+Big straight,,
+Great straight,,
 Three of a kind,1,
 Three of a kind,2,
 Three of a kind,3,
 Three of a kind,4,
 Three of a kind,5,
 Three of a kind,6,
-Small straight,,
-Big straight,,
-Great straight,,
-Colour,4,
-Colour,3,
-Colour,2,
-Colour,1,
 Full house,1,2
 Full house,1,3
 Full house,1,4
@@ -69,6 +65,10 @@ Full house,6,2
 Full house,6,3
 Full house,6,4
 Full house,6,5
+Colour,4,
+Colour,3,
+Colour,2,
+Colour,1,
 Four of a kind,1,
 Four of a kind,2,
 Four of a kind,3,

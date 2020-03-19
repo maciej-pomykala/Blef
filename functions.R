@@ -1,9 +1,9 @@
 all_hand_types <- c(
-  "High card", "Pair", "Two pairs", "Three of a kind", "Small straight", "Big straight", "Great straight",
-  "Colour", "Full house", "Four of a kind", "Small flush", "Big flush", "Great flush"
+  "High card", "Pair", "Two pairs", "Small straight", "Big straight", "Great straight", "Three of a kind",
+  "Full house", "Colour", "Four of a kind", "Small flush", "Big flush", "Great flush"
 )
 value_names <- c("9", "10", "J", "Q", "K", "A")
-colour_names <- c("hearts", "diamonds", "spades", "clubs")
+colour_names <- c("spades", "hearts", "diamonds", "clubs")
 ai_names <- c("Ay Eye One", "Ay Eye Two", "Ay Eye Three", "Ay Eye Four", "Ay Eye Five")
 
 encode_type <- function(type) {
@@ -109,9 +109,6 @@ determine_hand_existence <- function(cards, statement) {
   } else if (hand_type == "Two pairs") {
     outcome <- sum(card_values == detail_1) >= 2 & sum(card_values == detail_2) >= 2
     return(outcome)
-  } else if (hand_type == "Three of a kind") {
-    outcome <- sum(card_values == detail_1) >= 3
-    return(outcome)
   } else if (hand_type == "Small straight") {
     outcome <- any(card_values == 1) & any(card_values == 2) & any(card_values == 3) & any(card_values == 4) & any(card_values == 5)
     return(outcome)
@@ -121,17 +118,20 @@ determine_hand_existence <- function(cards, statement) {
   } else if (hand_type == "Great straight") {
     outcome <- any(card_values == 1) & any(card_values == 2) & any(card_values == 3) & any(card_values == 4) & any(card_values == 5) & any(card_values == 6)    
     return(outcome)
-  } else if (hand_type == "Colour") {
-    outcome <- sum(card_colours == detail_1) >= 5
+  } else if (hand_type == "Three of a kind") {
+    outcome <- sum(card_values == detail_1) >= 3
     return(outcome)
   } else if (hand_type == "Full house") {
     outcome <- sum(card_values == detail_1) >= 3 & sum(card_values == detail_2) >= 2
+    return(outcome)
+  } else if (hand_type == "Colour") {
+    outcome <- sum(card_colours == detail_1) >= 5
     return(outcome)
   } else if (hand_type == "Four of a kind") {
     outcome <- sum(card_values == detail_1) >= 4
     return(outcome)
   } else if (hand_type == "Small flush") {
-    relevant_values <- card_values[card_colours == detail_2]
+    relevant_values <- card_values[card_colours == detail_1]
     if (all(is.na(relevant_values))) {
       return(F)
     } else {
@@ -139,7 +139,7 @@ determine_hand_existence <- function(cards, statement) {
       return(outcome)
     }
   } else if (hand_type == "Big flush") {
-    relevant_values <- card_values[card_colours == detail_2]
+    relevant_values <- card_values[card_colours == detail_1]
     if (all(is.na(relevant_values))) {
       return(F)
     } else {
@@ -147,7 +147,7 @@ determine_hand_existence <- function(cards, statement) {
       return(outcome)
     }
   } else if (hand_type == "Great flush") {
-    relevant_values <- card_values[card_colours == detail_2]
+    relevant_values <- card_values[card_colours == detail_1]
     if (all(is.na(relevant_values))) {
       return(F)
     } else {
