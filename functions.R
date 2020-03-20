@@ -3,8 +3,7 @@ all_hand_types <- c(
   "Full house", "Colour", "Four of a kind", "Small flush", "Big flush", "Great flush"
 )
 value_names <- c("9", "10", "J", "Q", "K", "A")
-colour_names <- c("spades", "hearts", "diamonds", "clubs")
-ai_names <- c("Ay Eye One", "Ay Eye Two", "Ay Eye Three", "Ay Eye Four", "Ay Eye Five")
+colour_names <- c("♠", "♥", "♦", "♣")
 
 encode_type <- function(type) {
   code <- ifelse(type == "check", 0, which(all_hand_types) == type)
@@ -34,27 +33,14 @@ draw_cards <- function(n_cards) {
   player_numbers <- unlist(
     sapply(1:length(n_cards), function(p) rep(p, n_cards[p])) %>% unlist() %>% as.vector()
   )
-  cbind(player_numbers, all_cards)
-}
-
-display_own_cards <- function(cards) {
-  cards %<>% 
+  cbind(player_numbers, all_cards) %>% 
     as.data.frame() %>%
     set_colnames(c("player", "value", "colour")) %>%
-    arrange(-value)
-  c(
-    "Your cards are the following:<br/>",
-    apply(cards, 1, function(card) {
-      value <- setNames(c("9", "10", "J", "Q", "K", "A"), 1:6)[card[2]]
-      colour <- setNames(colour_names, 1:4)[card[3]]
-      return(paste0("<li><b>", value, " ", colour, "</b><br>"))
-    })
-  ) %>%
-    paste() %>%
-    HTML()
+    arrange(player, -value) %>%
+    mutate_all(as.numeric)
 }
 
-display_all_cards <- function(player_names, cards, history) {
+display_all_cards <- function(player_names, cards, history, language) {
   last_item <- history[nrow(history), ]
   owners <- cards[, 1]
   
@@ -65,30 +51,15 @@ display_all_cards <- function(player_names, cards, history) {
   }
   
   display_all_p_cards <- function(p) {
-    c(paste0("<br><b>", player_names[p], "</b>:"), apply(matrix(cards[owners == p, ], ncol = 3), 1, display_p_card)) %>%
+    c(paste0("<br><b>", player_names[p], "</b>:"), apply(cards[owners == p, ], 1, display_p_card)) %>%
       c() %>%
       paste(collapse = "<br>")
   }
   
-  c(display_history_item(player_names, last_item), "The cards are the following:", lapply(1:length(player_names), display_all_p_cards)) %>%
+  c(display_history_item(player_names, last_item, language), text$the_cards_were[[language]], lapply(1:length(player_names), display_all_p_cards)) %>%
     c() %>%
     paste(collapse = "<br>") %>%
     HTML()
-}
-
-display_n_cards <- function(player_names, n_cards) {
-  HTML(
-    paste(
-      c(
-        "<br/>Players have the following number of cards:<br/>",
-        lapply(1:length(player_names), function(p) {
-          player_name <- player_names[p]
-          player_n_cards <- n_cards[p]
-          return(paste0("<li>", player_name, ": ", player_n_cards, "<br/>"))
-        })
-      )
-    )
-  )
 }
 
 determine_hand_existence <- function(cards, statement) {
@@ -203,23 +174,24 @@ see_if_legal <- function(previous, current) {
   }
 }
 
-display_history_item <- function(player_names, item) {
+display_history_item <- function(player_names, item, language) {
   type <- item[2]
+  type_text <- text$hand_types[[language]][which(text$hand_types[["English"]] == type)]
   detail_1 <- as.numeric(item[3])
   detail_2 <- as.numeric(item[4])
   player <- player_names[as.numeric(item[1])]
   if (type == "check") {
-    action_text <- "checked"
+    action_text <- ifelse(item[1] == 1, text$player_checked[[language]], text$ai_checked[[language]])
   } else {
-    base_action_text <- "bet the following: "
+    base_action_text <- ifelse(item[1] == 1, text$player_bet[[language]], text$ai_bet[[language]])
     if (type %in% c("Two pairs", "Full house")) {
-      further_action_text <- paste(type, value_names[detail_1], value_names[detail_2], collapse = ", ")
+      further_action_text <- paste(type_text, value_names[detail_1], value_names[detail_2], collapse = ", ")
     } else if(type %in% c("High card", "Pair", "Three of a kind", "Four of a kind")) {
-      further_action_text <- paste(type, value_names[detail_1], collapse = ", ")
+      further_action_text <- paste(type_text, value_names[detail_1], collapse = ", ")
     } else if(type %in% c("Colour", "Small flush", "Big flush", "Great flush")) {
-      further_action_text <- paste(type, colour_names[detail_1], collapse = ", ")
+      further_action_text <- paste(type_text, colour_names[detail_1], collapse = ", ")
     } else {
-      further_action_text <- type
+      further_action_text <- type_text
     }
     action_text <- paste(base_action_text, further_action_text)
   }
@@ -228,10 +200,10 @@ display_history_item <- function(player_names, item) {
 }
 
 
-tell_history <- function(player_names, history) {
+tell_history <- function(player_names, history, language) {
   if (nrow(history) >= 1)
     lapply(nrow(history):1, function(i) {
-      display_history_item(player_names, history[i, ])
+      display_history_item(player_names, history[i, ], language)
     }) %>%
     paste() %>%
     HTML()

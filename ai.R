@@ -114,7 +114,6 @@ random_chance_table <- read_csv("random_chances.csv")
 index_card <- function(card) (card[2] - 1) * 4 + card[3]
 
 get_action <- function(n_cards, p_cards, history, p) {
-  p_cards %<>% force_matrix(3)
   history %<>% force_matrix(4)
   random_cards <- rep(1/24, 24)
   
