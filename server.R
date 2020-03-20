@@ -25,7 +25,3 @@ server <- function(input, output) {
   source("server_ui.R", local = TRUE)
   source("server_mechanics.R", local = TRUE)
 }
-
-# TO DO:
-# Fix the reverting hand type
-# Improve AI
