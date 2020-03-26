@@ -176,11 +176,11 @@ progressions_table <- read_csv("progressions.csv")
 
 index_card <- function(card) (card[2] - 1) * 4 + card[3]
 
-get_action <- function(n_cards, p_cards, history, p) {
+get_action <- function(n_cards, p_cards, history, p, params) {
   history %<>% force_matrix(4)
   
   # Deal with two corner cases not to screw up vectorised operations
-  if (nrow(history != 0) & all(unlist(history[nrow(history), 2:4]) == c("Great flush", 1, NA))) return(c(p, "check", NA, NA))
+  if (nrow(history != 0) & all(unlist(history[nrow(history), 2:3]) == c("Great flush", 1))) return(c(p, "check", NA, NA))
   if (sum(n_cards) == 24) return(c(p, "Great flush", 1, NA))
   
   # Implement simple heuristic - if it's 1-1 and someone is declaring 'High card' 9, 10 or J and you have the same - return a pair of those.
@@ -232,43 +232,23 @@ get_action <- function(n_cards, p_cards, history, p) {
     illegal_moves <- NULL
   }
   
-  # Calculate chance that rival had a way to progress
-  if(nrow(history) < 2) {
-    rival_could_progress <- 1
-  } else {
-    pm <- history[nrow(history) - 1, ]
-    pm_index <- index_statement(pm)
-    rival_could_progress <- progressions[pm + 1]
-  }
+  # Boost the combinations implied by the latest history item
+  if(nrow(history) > 0) {
+    compatible <- hand_details[, 25 + last_move_index] == 1
+    hand_details[compatible, 25] <- hand_details[compatible, 25] * (1 + params["naivete_1"])
+    hand_details[, 25] <- hand_details[, 25] / sum(hand_details[, 25]) # renormalise probabilities
+    compatible <- sum(hand_details[, 25] * hand_details[, 25 + last_move_index])
+  } 
 
   hand_chances <- compute_hands_chances_from_detailed(hand_details)
+  balanced_chances <- (1 - params["veracity"]) * random_chances + params["veracity"] * hand_chances
+  balanced_chances[illegal_moves] <- 0
   
-  veracity <- 0.7
-  balanced_chances <- (1 - veracity) * random_chances + veracity * hand_chances
-  balanced_chances[illegal_moves] <- -10
-
-  bc <- balanced_chances
-  
-  if(max(bc) < 0.4) {
+  if(max(balanced_chances) < params["cutoff"] & nrow(history) >= 1) {
     return(c(p, "check", NA, NA))
   } else {
-    # try if we can go to a bigger bet worth >40% that prevents opponents from doing anything worth >15%
-    block <- F
-    first <- tail(which(bc == max(bc)), 1)
-    if (first != 88) {
-      second <- tail(which(bc == max(bc[(first + 1): 88])), 1)
-      if (second != 88) {
-        third <- tail(which(bc == max(bc[(second + 1): 88])), 1)
-        block <- bc[second] >= (bc[first] - 0.1) & bc[second] > 0.5 & bc[third] <= 0.25
-      }
-    }
-    
-    if(block) {
-      hand_picked <- second
-    } else {
-      hand_picked <- which(bc == max(bc))
-      if (length(hand_picked) > 1) hand_picked %<>% sample(1)
-    }
+    boosted_chances <- exp(balanced_chances * params["focus"]) - 1
+    hand_picked <- sample(1:88, 1, prob = boosted_chances)
     
     return(get_bet_by_number(p, hand_picked))
   }

@@ -3,9 +3,9 @@ library(magrittr)
 library(dplyr)
 library(arrangements)
 library(readr)
-source("functions.R")
-source("ai.R")
-source("text.R")
+source("R/functions.R")
+source("R/ai.R")
+source("app/text.R")
 
 big_text <- h4
 
@@ -22,6 +22,6 @@ server <- function(input, output) {
   ui_elements <- reactiveValues()
   language <- reactiveVal("English")
   
-  source("server_ui.R", local = TRUE)
-  source("server_mechanics.R", local = TRUE)
+  source("app/server_ui.R", local = TRUE)
+  source("app/server_mechanics.R", local = TRUE)
 }

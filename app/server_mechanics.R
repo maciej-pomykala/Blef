@@ -129,7 +129,9 @@ observeEvent(state$current_player, {
       lp <- ifelse(cp == 1, state$n_players, cp - 1) 
       cp_name <- state$player_names[cp]
       p_cards <- state$cards[state$cards[, 1] == cp, ]
-      action <- get_action(state$n_cards, p_cards, state$history, cp)
+      
+      params <- setNames(c(1, 0.3, 0.9, 0.4, 10), c("naivete_1", "naivete_2", "veracity", "cutoff", "focus"))
+      action <- get_action(state$n_cards, p_cards, state$history, cp, params)
       
       if(action[2] == "check") {
         statement <- state$history[nrow(state$history), ]
