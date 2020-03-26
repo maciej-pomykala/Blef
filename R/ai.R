@@ -158,7 +158,7 @@ compute_detailed_chances <- function(combinations) {
   colour_reached <- list()
   for(colour in 1:4) {
     relevant_columns <- (0:5) * 4 + colour 
-    combinations[, 25 + 66 + colour] <- rowSums(combinations[, relevant_columns] > 0) >= 5
+    combinations[, 25 + 66 + 5 - colour] <- rowSums(combinations[, relevant_columns] > 0) >= 5
   }
   
   # SMALL POKER, BIG POKER, GREAT POKER
