@@ -10,7 +10,7 @@ index_statement <- function(statement) {
   if(type == "Great straight") return(30)
   if(type == "Three of a kind") return(30 + detail_1)
   if(type == "Full house") return(36 + (detail_1 - 1) * 5 + detail_2 - sum(detail_2 > detail_1))
-  if(type == "Colour") return(66 + detail_1)
+  if(type == "Colour") return(66 + 5 - detail_1)
   if(type == "Four of a kind") return(70 + detail_1)
   if(type == "Small flush") return(76 + 5 - detail_1)
   if(type == "Big flush") return(80 + 5 - detail_1)
@@ -49,11 +49,11 @@ compute_hands_chances <- function(combinations) {
   # TWO PAIRS
   position <- 13
   for(big in 2:6) {
+    relevant_columns_big <-   ((big   - 1) * 4 + 1):((big   - 1) * 4 + 4)
+    big_reached   <- rowSums(combinations[, relevant_columns_big  ] > 0) >= 2
     for(small in 1:(big - 1)) {
       relevant_columns_small <- ((small - 1) * 4 + 1):((small - 1) * 4 + 4)
-      relevant_columns_big <-   ((big   - 1) * 4 + 1):((big   - 1) * 4 + 4)
       small_reached <- rowSums(combinations[, relevant_columns_small] > 0) >= 2
-      big_reached   <- rowSums(combinations[, relevant_columns_big  ] > 0) >= 2
       out[position] <- sum(combinations[small_reached & big_reached, 25])
       position <- position + 1
     }
@@ -72,11 +72,11 @@ compute_hands_chances <- function(combinations) {
   # FULL HOUSE
   position <- 37
   for(big in 1:6) {
+    relevant_columns_big <-   ((big   - 1) * 4 + 1):((big   - 1) * 4 + 4)
+    big_reached   <- rowSums(combinations[, relevant_columns_big  ] > 0) >= 3
     for(small in (1:6)[-big]) {
       relevant_columns_small <- ((small - 1) * 4 + 1):((small - 1) * 4 + 4)
-      relevant_columns_big <-   ((big   - 1) * 4 + 1):((big   - 1) * 4 + 4)
       small_reached <- rowSums(combinations[, relevant_columns_small] > 0) >= 2
-      big_reached   <- rowSums(combinations[, relevant_columns_big  ] > 0) >= 3
       out[position] <- sum(combinations[small_reached & big_reached, 25])
       position <- position + 1
     }
@@ -247,7 +247,7 @@ get_action <- function(n_cards, p_cards, history, p, params) {
   if(max(balanced_chances) < params["cutoff"] & nrow(history) >= 1) {
     return(c(p, "check", NA, NA))
   } else {
-    boosted_chances <- exp(balanced_chances * params["focus"]) - 1
+    boosted_chances <- balanced_chances ^ params["focus"]
     hand_picked <- sample(1:88, 1, prob = boosted_chances)
     
     return(get_bet_by_number(p, hand_picked))

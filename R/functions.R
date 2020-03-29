@@ -23,6 +23,11 @@ force_matrix <- function(table, n) {
   }
 }
 
+format_colour <- function(i) {
+  formatting <- ifelse(i %in% 2:3, "<font color=\"#800000\">", "<font color=\"#000080\">")
+  paste0(formatting, colour_names[i], "</font>")
+}
+
 possible_cards <- apply(expand.grid(value = 1:6, colour = 1:4), 1, function(row) 
   c(row[1], row[2])
 ) %>%
@@ -45,8 +50,8 @@ display_all_cards <- function(player_names, cards, history, language) {
   owners <- cards[, 1]
   
   display_p_card <- function(card) {
-    value <- setNames(c("9", "10", "J", "Q", "K", "A"), 1:6)[card[2]]
-    colour <- setNames(colour_names, 1:4)[card[3]]
+    value <- c("9", "10", "J", "Q", "K", "A")[card[2]]
+    colour <- format_colour(card[3])
     return(paste0(value, " ", colour))
   }
   

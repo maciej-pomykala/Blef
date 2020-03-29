@@ -47,8 +47,8 @@ observeEvent(state$cards, {
     c(
       text$your_cards[[language()]],
       apply(state$cards[state$cards[, 1] == 1, ], 1, function(card) {
-        value <- setNames(c("9", "10", "J", "Q", "K", "A"), 1:6)[card[2]]
-        colour <- setNames(colour_names, 1:4)[card[3]]
+        value <- c("9", "10", "J", "Q", "K", "A")[card[2]]
+        colour <- format_colour(card[3])
         return(paste0("<li><b>", value, " ", colour, "</b><br>"))
       })
     ) %>%
@@ -63,7 +63,7 @@ output$display_n_cards <- renderUI({
     lapply(1:length(state$player_names), function(p) {
       player_name <- state$player_names[p]
       player_n_cards <- state$n_cards[p]
-      return(paste0("<li>", player_name, ": ", player_n_cards, "<br/>"))
+      return(paste0("<li>", player_name, ": <b>", player_n_cards, "</b><br/>"))
     })
   ) %>%
     paste() %>%

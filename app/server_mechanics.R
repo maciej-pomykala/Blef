@@ -86,9 +86,11 @@ observeEvent(input$check, {
   if (!hand_exists) {
     knock_out <- state$n_cards[lp] == state$max_cards
     if(knock_out & state$n_players == 2) end_game(human_win = T, hand_exists = F)
-    if(knock_out & state$n_players >= 2) erase_player(lp)
-    if(!knock_out) give_ai_a_card(lp, hand_exists = F) 
-    state$current_player <- lp 
+    if(knock_out & state$n_players > 2) erase_player(lp)
+    if(!knock_out) {
+      give_ai_a_card(lp, hand_exists = F) 
+      state$current_player <- lp
+    } 
   }
   deal_cards_and_reset_history()
 })
@@ -130,7 +132,7 @@ observeEvent(state$current_player, {
       cp_name <- state$player_names[cp]
       p_cards <- state$cards[state$cards[, 1] == cp, ]
       
-      params <- setNames(c(1, 0.3, 0.9, 0.4, 10), c("naivete_1", "naivete_2", "veracity", "cutoff", "focus"))
+      params <- setNames(c(3, 0.3, 0.9, 0.4, 15), c("naivete_1", "naivete_2", "veracity", "cutoff", "focus"))
       action <- get_action(state$n_cards, p_cards, state$history, cp, params)
       
       if(action[2] == "check") {
